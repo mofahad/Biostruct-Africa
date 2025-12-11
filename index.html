@@ -1,0 +1,1060 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Application and Participation Flow in BioStruct-Africa's Capacity-Building Workshops</title>
+
+  <!-- Plotly -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <!-- Lightweight, classless CSS for nicer defaults -->
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      /* slightly warm black / grey base */
+      --bg: #050608;
+      --bg-grad-top: #050608;
+      --bg-grad-bot: #020617;
+      --surface: #111827;
+      --surface-2: #020617;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --ring: #38bdf8;
+      --outline: rgba(148,163,184,0.45);
+      --shadow: 0 18px 45px rgba(0,0,0,0.85);
+    }
+    html,body{
+      min-height:100%;
+      margin:0;
+      font-family:'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      /* subtle vignette-style dark background */
+      background:
+        radial-gradient(circle at 0% 0%, rgba(56,189,248,0.24) 0, transparent 55%),
+        radial-gradient(circle at 100% 0%, rgba(129,140,248,0.22) 0, transparent 55%),
+        radial-gradient(circle at 50% 100%, rgba(52,211,153,0.20) 0, transparent 60%),
+        linear-gradient(180deg, var(--bg-grad-top), var(--bg-grad-bot));
+      color: var(--text);
+    }
+    .container{
+      max-width: 1440px;
+      margin: 16px auto;
+      padding: 16px 20px 24px 20px;
+      min-height: calc(100vh - 32px);
+      padding-bottom: 40px;
+    }
+    h1{ margin:0 0 8px 0; font-weight:700; letter-spacing:.2px; }
+    .meta{ color: var(--muted); font-size: 14px; }
+
+    .card{
+      background: var(--surface);
+      border: 1px solid var(--outline);
+      border-radius: 14px;
+      padding: 14px 14px 10px 14px;
+      box-shadow: var(--shadow);
+    }
+
+    /* --- Controls bar --- */
+    .controls-wrap{
+      position: sticky; top: 8px; z-index: 5; margin-top: 14px;
+    }
+    .controls{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px 12px;
+      align-items: end;
+    }
+    .control-item label{ font-size:12px; color:var(--muted); margin-bottom:6px; display:block; }
+    .control-item select{
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--outline);
+      border-radius: 10px;
+      padding: 9px 12px;
+      transition: border .2s ease, box-shadow .2s ease, transform .08s ease;
+    }
+    .control-item select:focus{
+      outline: none;
+      border-color: var(--ring);
+      box-shadow: 0 0 0 3px rgba(74,168,255,.15);
+    }
+    .control-item select:hover{
+      transform: translateY(-1px);
+    }
+
+    /* --- Plot area --- */
+    #plot-container{
+      overflow: hidden;
+      padding: 10px;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(56,189,248,0.18) 0, transparent 55%),
+        radial-gradient(circle at 85% 30%, rgba(248,113,113,0.16) 0, transparent 55%),
+        radial-gradient(circle at 60% 85%, rgba(52,211,153,0.16) 0, transparent 55%),
+        #020617;
+      border: 1px solid var(--outline);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      position: relative;
+      min-height: 520px;
+    }
+    #plot{
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      background: transparent;
+      transition: height .25s ease, width .25s ease;
+      display: block;
+    }
+    #plot .sankey text {
+      font-weight: 600 !important;
+      font-size: 14px !important;
+    }
+
+    .footer{ 
+      margin-top:0; 
+      color:var(--muted); 
+      font-size:11px; 
+      line-height:1.4;
+      max-width: none;
+      padding: 12px 0;
+    }
+    .footer p{ margin:2px 0; }
+    .footer strong{ color:var(--text); font-weight:600; }
+
+    /* Custom tooltip (fixed to viewport so it never clips) */
+    .custom-tooltip{
+      position: fixed;
+      max-height: min(280px, calc(100vh - 24px));
+      max-width: calc(100vw - 32px);
+      overflow-y: scroll;
+      overflow-x: hidden;
+      width: 320px;
+      background: rgba(16,27,50,0.98);
+      backdrop-filter: blur(8px);
+      color: #E6EEF6;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      z-index: 10000;
+      display: none;
+      font-size: 13px;
+      line-height: 1.35;
+      border: 1px solid var(--outline);
+      box-sizing: border-box;
+      scrollbar-width: auto;      /* Firefox */
+      scrollbar-color: rgba(148,163,184,0.7) transparent;
+    }
+    .custom-tooltip::-webkit-scrollbar {
+      width: 8px;               /* slightly bigger so mac shows it */
+    }
+
+    .custom-tooltip::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.05);   /* <-- FORCE track visibility */
+      border-radius: 8px;
+    }
+
+    .custom-tooltip::-webkit-scrollbar-thumb {
+      background: rgba(148,163,184,0.7);
+      border-radius: 8px;
+    }
+
+    .custom-tooltip::-webkit-scrollbar-thumb:hover {
+      background: rgba(209,213,219,0.9);
+    }
+
+    /* Subtle appear animation */
+    .fade-in{ animation: fadeIn .35s ease both; }
+    @keyframes fadeIn{ from{opacity:0; transform: translateY(4px);} to{opacity:1; transform:none;} }
+  </style>
+</head>
+<body>
+  <main class="container fade-in">
+    <header style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
+      <div>
+        <h1>Application and Participation Flow in BioStruct-Africa's Capacity-Building Workshops</h1>
+        <p class="meta">Interactive Sankey — layer 1 locked to <strong>Workshop</strong>. Choose remaining attributes below.</p>
+      </div>
+    </header>
+
+    <section class="controls-wrap">
+      <div class="card">
+        <div class="controls" id="controls"></div>
+      </div>
+    </section>
+
+    <section style="margin-top:14px; margin-bottom:0;">
+      <div id="plot-container" style="margin-bottom:60px;">
+        <div id="plot"></div>
+      </div>
+      <div id="custom-tooltip" class="custom-tooltip"></div>
+    </section>
+
+    <section style="margin-top:0; margin-bottom:24px;">
+      <div class="footer">
+        <p>This interactive Sankey diagram provides an overview of the applicants and participants of BioStruct-Africa's capacity-building workshops in Mali (2022), Cameroon (2024), and Kenya (2025). It visualizes the flow of applicants and participants, mapping their professional backgrounds, career stages and institutional affiliations. The diagram helps to illuminate the composition of each workshop and understand the dynamics of engagement across different regions and scientific communities.</p>
+        <p><strong>Notes:</strong></p>
+        <p><strong>Admission Outcome:</strong> Classifies applicants as selected or rejected. A rejected status is not necessarily indicative of ineligibility but may reflect logistical limitations such as workshop capacity.</p>
+        <p><strong>General Remark:</strong> While applicants may have reported multiple countries of affiliation or research fields, this visualization displays only the primary designation for clarity.</p>
+        <p>This visualization is a collaboration between BioStruct-Africa, TILLER ALPHA GmbH and Athish Gopal Rajesh, Mohammed Fahad Shahul Hameed, Pravin Raj Senguttuvan, Sushil Amalan John Moses, Vimal Aditya Raj Varadharaj at Luddy School of Informatics, Computing, and Engineering - Indiana University, Bloomington</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  const DATA_ROWS = [{"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Chemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Unknown"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Unknown", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Senior Scientist", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Eastern Asia"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Northern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Plant, Agricultural & Environmental Sciences", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Northern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Plant, Agricultural & Environmental Sciences", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Unknown"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Northern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Chemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Senior Scientist", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Unknown", "Field of Research": "Unknown", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Unknown", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Asia"}, {"Workshop": "Mali", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Unknown", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Plant, Agricultural & Environmental Sciences", "Region": "Eastern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Plant, Agricultural & Environmental Sciences", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Europe"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Southern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Southern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Europe"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Southern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Unknown"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Central Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Biotechnology & Bioengineering", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Chemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Chemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Chemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Unknown", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Northern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Unknown", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Europe"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Senior Scientist", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Southern Asia"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Chemistry", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Plant, Agricultural & Environmental Sciences", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Plant, Agricultural & Environmental Sciences", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Northern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Senior Scientist", "Field of Research": "Chemistry", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Senior Scientist", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Unknown"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Southern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Chemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Chemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Northern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Europe"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Senior Scientist", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Western Asia"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Northern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Unknown", "Region": "Unknown"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Northern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Southern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Northern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Northern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Eastern Asia"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Unknown"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Unknown", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Biotechnology & Bioengineering", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Southern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Southern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Eastern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Chemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Unknown", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Senior Scientist", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Southern Asia"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Eastern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Unknown", "Region": "Southern Asia"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Unknown", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Computer Science, Physics & Engineering", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Plant, Agricultural & Environmental Sciences", "Region": "Eastern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Unknown", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Western Asia"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Chemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Chemistry", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Unknown", "Field of Research": "Plant, Agricultural & Environmental Sciences", "Region": "Southern Asia"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Europe"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Unknown", "Region": "Europe"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Unknown", "Region": "Southern Asia"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Southern Asia"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Unknown", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Chemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Biotechnology & Bioengineering", "Region": "Southern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Chemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Unknown", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Biotechnology & Bioengineering", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Southern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Mali", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Pharmacology, Pharmacy & Medicinal Chemistry", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Medical Laboratory Sciences, Medicine & Public Health", "Region": "Western Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Chemistry", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Europe"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "PhD Student", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Central Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Senior Scientist", "Field of Research": "Veterinary Medicine, Zoology & Animal Sciences", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Central Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Biotechnology & Bioengineering", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Senior Scientist", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Eastern Africa"}, {"Workshop": "Cameroon", "Admission Outcome": "Selected", "Gender": "Female", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Eastern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Molecular Biology, Genetics & Cell Biology", "Region": "Eastern Africa"}, {"Workshop": "Mali", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Structural Biology, Biophysics & Biochemistry", "Region": "Unknown"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Female", "Status": "Pre-Doc", "Field of Research": "Bioinformatics & Computational Biology", "Region": "Western Asia"}, {"Workshop": "Kenya", "Admission Outcome": "Rejected", "Gender": "Male", "Status": "Pre-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Northern Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Female", "Status": "PhD Student", "Field of Research": "Biotechnology & Bioengineering", "Region": "Western Africa"}, {"Workshop": "Kenya", "Admission Outcome": "Selected", "Gender": "Male", "Status": "Post-Doc", "Field of Research": "Microbiology, Immunology & Infectious Diseases", "Region": "Eastern Africa"}];
+  const ALL_ATTRS = ["Admission Outcome", "Gender", "Status", "Field of Research", "Region"];
+  const TOTAL_LAYERS = 4;
+
+  /* High-contrast, color-blind friendly (Okabe–Ito + vivid) */
+  const LAYER_BASES = [
+    // Layer 0 — teal / blue / green dominant
+    [
+      "#1abc9c",  // teal
+      "#3498db",  // soft blue
+      "#2ecc71",  // green
+      "#9b59b6",  // purple
+      "#f1c40f",  // yellow
+      "#e67e22",  // orange
+      "#e74c3c",  // red
+      "#95a5a6",  // grey
+      "#16a085",  // deep teal
+      "#2980b9",  // deep blue
+      "#27ae60",  // deep green
+      "#8e44ad"   // deep purple
+    ],
+
+    // Layer 1 — rotate but also shift hue groups for stronger distinction
+    [
+      "#2ecc71",  // green
+      "#9b59b6",  // purple
+      "#3498db",  // blue
+      "#e67e22",  // orange
+      "#1abc9c",  // teal
+      "#f1c40f",  // yellow
+      "#e74c3c",  // red
+      "#7f8c8d",  // grey
+      "#27ae60",  // deep green
+      "#8e44ad",  // deep purple
+      "#2980b9",  // deep blue
+      "#d35400"   // deep orange
+    ],
+
+    // Layer 2 — warm-dominant
+    [
+      "#e74c3c",  // red
+      "#e67e22",  // orange
+      "#f39c12",  // amber
+      "#f1c40f",  // yellow
+      "#d35400",  // deep orange
+      "#c0392b",  // deep red
+      "#9b59b6",  // purple
+      "#2980b9",  // deep blue
+      "#16a085",  // teal
+      "#2ecc71",  // green
+      "#7f8c8d",  // grey
+      "#34495e"   // slate
+    ],
+
+    // Layer 3 — cool / neutral dominant
+    [
+      "#34495e",  // slate blue/grey
+      "#2c3e50",  // deep navy
+      "#2980b9",  // rich blue
+      "#8e44ad",  // violet
+      "#1abc9c",  // teal
+      "#27ae60",  // green
+      "#95a5a6",  // muted grey
+      "#7f8c8d",  // darker grey
+      "#3498db",  // bright blue
+      "#9b59b6",  // purple
+      "#e67e22",  // orange
+      "#f39c12"   // amber
+    ]
+  ];
+
+  const MAX_LABELS_PER_LAYER = 30;
+
+  const controlsEl = document.getElementById('controls');
+
+  /* Tooltip ensure (fixed in DOM root) */
+  (function ensureTooltip(){
+    let tt = document.getElementById('custom-tooltip');
+    if(!tt){ tt = document.createElement('div'); tt.id='custom-tooltip'; document.body.appendChild(tt); }
+  })();
+
+  function createSelect(idx, options, disabled=false) {
+    const wrap = document.createElement('div');
+    wrap.className = 'control-item';
+    const lbl = document.createElement('label');
+    lbl.innerText = `Layer ${idx+1}`;
+    const sel = document.createElement('select'); sel.id = 'sel_'+idx; if(disabled) sel.disabled = true;
+    options.forEach(o=>{ const opt=document.createElement('option'); opt.value=o; opt.text=o; sel.appendChild(opt); });
+    wrap.appendChild(lbl); wrap.appendChild(sel);
+    return wrap;
+  }
+
+  function initControls() {
+    controlsEl.innerHTML = '';
+
+    // Layer 1: locked Workshop
+    const sel0 = createSelect(0, ['Workshop'], true);
+    controlsEl.appendChild(sel0);
+
+    const selects = [sel0.querySelector('select')];
+
+    // Layers 2..N: all attrs available initially
+    for (let i = 1; i < TOTAL_LAYERS; i++) {
+      const selWrap = createSelect(i, ALL_ATTRS.slice(), false);
+      controlsEl.appendChild(selWrap);
+      const sel = selWrap.querySelector('select');
+      selects.push(sel);
+
+      sel.addEventListener('change', () => {
+        enforceUniqueSelections();
+        rebuildSankeyAnimated();
+      });
+    }
+
+    // Explicit initial defaults: first, second, third attributes, etc.
+    const used = new Set(['Workshop']);
+    for (let i = 1; i < selects.length; i++) {
+      const sel = selects[i];
+      if (!sel) continue;
+
+      let chosen = null;
+      for (const a of ALL_ATTRS) {
+        if (!used.has(a)) { chosen = a; break; }
+      }
+      if (!chosen) {
+        chosen = ALL_ATTRS[0] || '';
+      }
+
+      sel.value = chosen;
+      used.add(chosen);
+    }
+
+    // Now clean up options so no attribute is reused across layers
+    enforceUniqueSelections();
+  }
+
+  function getSelections(){
+    const sels = [];
+    for(let i=0;i<TOTAL_LAYERS;i++){
+      const sel = document.getElementById('sel_'+i);
+      if(!sel) continue;
+      sels.push(sel.value);
+    }
+    return sels;
+  }
+
+  function enforceUniqueSelections() {
+    const selects = [];
+    for (let i = 0; i < TOTAL_LAYERS; i++) {
+      const sel = document.getElementById('sel_' + i);
+      if (sel) selects.push(sel);
+    }
+
+    // Lock layer 1 to Workshop
+    if (selects.length > 0) {
+      selects[0].innerHTML = '';
+      const o = document.createElement('option');
+      o.value = 'Workshop';
+      o.text = 'Workshop';
+      selects[0].appendChild(o);
+      selects[0].value = 'Workshop';
+    }
+
+    // Current choices (including whatever defaults we set)
+    const currentChosen = new Set();
+    selects.forEach(s => {
+      if (s.value) currentChosen.add(s.value);
+    });
+
+    // Rebuild options for layers 2+
+    for (let i = 1; i < selects.length; i++) {
+      const sel = selects[i];
+      const cur = sel.value;
+      sel.innerHTML = '';
+
+      for (const a of ALL_ATTRS) {
+        const chosenByOthers = currentChosen.has(a) && a !== cur;
+        if (!chosenByOthers) {
+          const opt = document.createElement('option');
+          opt.value = a;
+          opt.text = a;
+          sel.appendChild(opt);
+        }
+      }
+
+      if (cur && Array.from(sel.options).some(o => o.value === cur)) {
+        sel.value = cur;
+      } else if (sel.options.length > 0) {
+        sel.value = sel.options[0].value;
+      }
+    }
+  }
+
+  function buildSankey(selectedAttrs){
+    const nodes = [];
+    const nodeIndex = [];
+    for(let i=0;i<selectedAttrs.length;i++){ nodeIndex.push({}); }
+
+    const nodeRows = [];
+    for(let i=0;i<selectedAttrs.length;i++){ nodeRows.push({}); }
+
+    const linkCounts = {};
+    DATA_ROWS.forEach((row, ridx)=>{
+      const vals = selectedAttrs.map(a=> (row[a] !== undefined ? row[a] : 'Unknown'));
+      vals.forEach((v, li)=>{
+        const key = v || 'Unknown';
+        if(!(key in nodeRows[li])) nodeRows[li][key] = [];
+        nodeRows[li][key].push(ridx);
+      });
+      for(let i=0;i<vals.length-1;i++){
+        const sVal = vals[i] || 'Unknown';
+        const tVal = vals[i+1] || 'Unknown';
+        const key = `${i}:::${sVal}:::${i+1}:::${tVal}`;
+        linkCounts[key] = (linkCounts[key] || 0) + 1;
+      }
+    });
+
+    for(const key in linkCounts){
+      const parts = key.split(':::');
+      const layerS = parseInt(parts[0]); const sVal = parts[1];
+      const layerT = parseInt(parts[2]); const tVal = parts[3];
+      if(!(sVal in nodeIndex[layerS])){ nodeIndex[layerS][sVal] = nodes.length; nodes.push(sVal); }
+      if(!(tVal in nodeIndex[layerT])){ nodeIndex[layerT][tVal] = nodes.length; nodes.push(tVal); }
+    }
+
+    const crowdedLayer = [];
+    for (let layer = 0; layer < nodeIndex.length; layer++) {
+      const uniqCount = Object.keys(nodeIndex[layer]).length;
+      crowdedLayer[layer] = uniqCount > MAX_LABELS_PER_LAYER;
+    }
+
+    // Build labels array and blank labels for crowded layers
+    const nodeLabels = nodes.slice();
+    for (let layer = 0; layer < nodeIndex.length; layer++) {
+      if (!crowdedLayer[layer]) continue;
+      const map = nodeIndex[layer];
+      for (const v in map) {
+        nodeLabels[map[v]] = "";   // hide label text but keep node + tooltip
+      }
+    }
+
+    const nodeColors = new Array(nodes.length).fill('rgba(200,200,200,0.9)');
+    for(let layer=0; layer<nodeIndex.length; layer++){
+      const vals = Object.keys(nodeIndex[layer]);
+      const base = LAYER_BASES[layer % LAYER_BASES.length];
+      vals.forEach((v, idx)=>{
+        const nIdx = nodeIndex[layer][v];
+        const color = base[idx % base.length];
+        nodeColors[nIdx] = color;
+      });
+    }
+
+    const sources=[], targets=[], values=[], linkColors=[], linkLabels=[];
+    for(const key in linkCounts){
+      const count = linkCounts[key];
+      const parts = key.split(':::');
+      const layerS = parseInt(parts[0]); const sVal = parts[1];
+      const layerT = parseInt(parts[2]); const tVal = parts[3];
+      const sIdx = nodeIndex[layerS][sVal];
+      const tIdx = nodeIndex[layerT][tVal];
+      sources.push(sIdx); targets.push(tIdx); values.push(count);
+      const layerBase = LAYER_BASES[layerS % LAYER_BASES.length];
+      const valsInLayer = Object.keys(nodeIndex[layerS]);
+      const pos = valsInLayer.indexOf(sVal);
+      const branchColor = layerBase[(pos >= 0 ? pos : 0) % layerBase.length];
+      linkColors.push(hexToRgba(branchColor, 0.45));
+      linkLabels.push(`${sVal} → ${tVal}: ${count}`);
+    }
+
+    const nodeValue = new Array(nodes.length).fill(0);
+    for(let i=0;i<values.length;i++){ nodeValue[sources[i]] += values[i]; nodeValue[targets[i]] += values[i]; }
+
+    const nodeCustom = nodes.map((label, idx)=>{
+      let found = null;
+      for (let layer = 0; layer < nodeIndex.length; layer++) {
+        const m = nodeIndex[layer];
+        for (const k in m) {
+          if (m[k] === idx) { found = { layer, value: k }; break; }
+        }
+        if (found) break;
+      }
+
+      // value = link-based total (we keep it), rowCount = true #rows through this node
+      const meta = { label, value: nodeValue[idx], rowCount: 0, breakdown: {} };
+
+      if (found) {
+        const rowsIdx = nodeRows[found.layer][found.value] || [];
+        const totalRows = rowsIdx.length;
+        meta.rowCount = totalRows;
+
+        ALL_ATTRS.forEach(attr => {
+          const counts = {};
+          rowsIdx.forEach(rid => {
+            const v = DATA_ROWS[rid][attr] || 'Unknown';
+            counts[v] = (counts[v] || 0) + 1;
+          });
+          const arr = Object.keys(counts)
+            .map(k => ({ value: k, count: counts[k] }))
+            .sort((a, b) => b.count - a.count);
+
+          const topVal = arr.length > 0 ? arr[0].value : null;
+          const topCount = arr.length > 0 ? arr[0].count : 0;
+
+          // store total so tooltip can compute percentages per attribute
+          meta.breakdown[attr] = {
+            top: topVal,
+            count: topCount,
+            values: arr,
+            total: totalRows
+          };
+        });
+      }
+
+      return meta;
+    });
+
+    const trace = {
+      type: 'sankey',
+      arrangement: 'snap',
+
+      // FORCE consistent white hover labels everywhere
+      hoverlabel: {
+        bgcolor: "rgba(20, 30, 50, 0.95)",   // dark navy background
+        bordercolor: "#ffffff",
+        font: { color: "#ffffff", size: 12, family: "'Inter', sans-serif" }
+      },
+
+      textfont: {
+        color: '#000000',
+        size: 14,
+        family: "'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial"
+      },
+
+      node: {
+        label: nodeLabels,
+        color: nodeColors.map(c=>hexToRgba(c, 0.95)),
+        pad: 8,
+        thickness: 12,
+        line: { color: 'rgba(148,163,184,0.35)', width: 1 },
+        customdata: nodeCustom,
+        hovertemplate: '<b>%{label}</b><br>Layer value total: %{customdata.value}<extra></extra>',
+        // Ensure node hover label also stays consistent
+        hoverlabel: {
+          bgcolor: "rgba(20, 30, 50, 0.95)",
+          bordercolor: "#ffffff",
+          font: { color: "#ffffff", size: 12 }
+        }
+      },
+
+      link: {
+        source: sources, target: targets, value: values,
+        color: linkColors, label: linkLabels,
+        hovertemplate: '%{label}<extra></extra>',
+
+        // Ensure link hover box also stays consistent
+        hoverlabel: {
+          bgcolor: "rgba(20, 30, 50, 0.95)",
+          bordercolor: "#ffffff",
+          font: { color: "#ffffff", size: 12 }
+        }
+      }
+    };
+
+    return {trace, nodes, nodeColors};
+  }
+
+  function hexToRgba(hex, alpha=1.0){
+    if(hex.startsWith('rgba')) return hex;
+    const h = hex.replace('#','');
+    const bigint = parseInt(h,16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function setAlpha(colorStr, alpha) {
+    if (colorStr.startsWith('rgba')) {
+      const parts = colorStr.replace('rgba(', '').replace(')', '').split(',');
+      return `rgba(${parts[0]},${parts[1]},${parts[2]},${alpha})`;
+    }
+    if (colorStr.startsWith('#')) {
+      return hexToRgba(colorStr, alpha);
+    }
+    return colorStr;
+  }
+
+  let CURRENT = null;
+
+  let tooltipLocked = false;
+  let tooltipHideTimer = null;
+  let lastMousePos = { x: 0, y: 0 };
+
+  // Currently selected node for "full path" highlight (null = no selection)
+  let SELECTED_NODE = null;
+
+  // Track global mouse position (used when deciding whether to hide tooltip)
+  window.addEventListener('mousemove', (e) => {
+    lastMousePos.x = e.clientX;
+    lastMousePos.y = e.clientY;
+  });
+
+  // Setup tooltip interactivity (lock when hovered)
+  (function setupTooltipInteractivity() {
+    const tt = document.getElementById('custom-tooltip');
+    if (!tt) return;
+
+    // When mouse enters tooltip, keep it visible
+    tt.addEventListener('mouseenter', () => {
+      tooltipLocked = true;
+      if (tooltipHideTimer) {
+        clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = null;
+      }
+    });
+
+    // When mouse leaves tooltip, hide after a delay
+    tt.addEventListener('mouseleave', () => {
+      tooltipLocked = false;
+      scheduleTooltipHide(2000); // 2s after leaving tooltip
+    });
+
+    // Optional: click to “pin” the tooltip for a few seconds
+    tt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      tooltipLocked = true;
+      if (tooltipHideTimer) {
+        clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = null;
+      }
+      setTimeout(() => {
+        tooltipLocked = false;
+        scheduleTooltipHide(500);
+      }, 5000); // pinned for 5s
+    });
+  })();
+
+  function drawInitial(){
+    const sels = getSelections();
+    const {trace, nodes, nodeColors} = buildSankey(sels);
+    const data = [trace];
+    const layout = {
+      font: { family: "'Inter', Roboto, 'Helvetica Neue', Arial", color: '#000000', size: 14 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      margin: {t: 24, r: 12, l: 12, b: 12},
+    };
+    adjustPlotSize();
+    Plotly.newPlot('plot', data, layout, {displayModeBar:false, responsive:true});
+
+    CURRENT = {
+      data,
+      nodeColors,
+      baseLinkColors: trace.link.color.slice()
+    };
+
+    const gd = document.getElementById('plot');
+    gd.on('plotly_hover', handleHoverWrapper);
+    gd.on('plotly_unhover', handleUnhoverWrapper);
+    gd.on('plotly_click', handleClick);
+
+    // Keep fit-to-viewport on window resize
+    window.addEventListener('resize', () => {
+      adjustPlotSize();
+      Plotly.Plots.resize(gd);
+    });
+  }
+
+
+  function rebuildSankeyAnimated(){
+    const sels = getSelections();
+    const {trace, nodes, nodeColors} = buildSankey(sels);
+    const data = [trace];
+
+    const layout = {
+      font: { family: "'Inter', Roboto, 'Helvetica Neue', Arial", color: '#000000', size: 14 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      margin: {t: 24, r: 12, l: 12, b: 12},
+      transition: { duration: 600, easing: 'cubic-in-out' }
+    };
+
+    adjustPlotSize();
+    Plotly.react('plot', data, layout, {displayModeBar:false, responsive:true});
+
+    CURRENT = {
+      data,
+      nodeColors,
+      baseLinkColors: trace.link.color.slice()
+    };
+
+    const gd = document.getElementById('plot');
+    if (gd) {
+      gd.removeAllListeners && gd.removeAllListeners();
+      gd.on('plotly_hover', handleHoverWrapper);
+      gd.on('plotly_unhover', handleUnhoverWrapper);
+      gd.on('plotly_click', handleClick);      // NEW
+      Plotly.Plots.resize(gd);
+    }
+  }
+
+  /* Scale width & height to reduce label overlap; allow vertical scrolling if very tall */
+  function adjustPlotSize(){
+    // Fill viewport height minus header and small padding
+    // Footer will appear naturally when scrolling
+    const header = document.querySelector('.controls-wrap');
+    const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+    const padding = 40; // small padding at bottom for breathing room
+    // Fill most of viewport - footer appears on scroll
+    const targetHeight = Math.max(520, Math.floor(window.innerHeight - headerBottom - padding));
+
+    const plotContainer = document.getElementById('plot-container');
+    const plotEl = document.getElementById('plot');
+    if (plotContainer && plotEl) {
+      // Set container height to match plot height, ensuring border wraps properly
+      plotContainer.style.height = targetHeight + 'px';
+      plotEl.style.width = '100%';
+      plotEl.style.height = targetHeight + 'px';
+    }
+  }
+
+  function handleHoverWrapper(ev) {
+    if (tooltipHideTimer) {
+      clearTimeout(tooltipHideTimer);
+      tooltipHideTimer = null;
+    }
+    handleHover(ev);
+  }
+
+  function handleUnhoverWrapper() {
+    if (tooltipLocked) return;      // if user is in tooltip, don't hide
+    scheduleTooltipHide(250);       // short grace period to move into tooltip
+  }
+
+  function scheduleTooltipHide(delayMs) {
+    if (tooltipHideTimer) clearTimeout(tooltipHideTimer);
+    tooltipHideTimer = setTimeout(() => {
+      const tt = document.getElementById('custom-tooltip');
+      if (tt) {
+        const rect = tt.getBoundingClientRect();
+        // If mouse moved into tooltip during delay, keep it
+        if (
+          lastMousePos.x >= rect.left &&
+          lastMousePos.x <= rect.right &&
+          lastMousePos.y >= rect.top &&
+          lastMousePos.y <= rect.bottom
+        ) {
+          tooltipLocked = true;
+          return;
+        }
+      }
+      restoreHover();
+    }, delayMs);
+  }
+
+  function handleClick(ev) {
+    if (!CURRENT) return;
+
+    // 👉 If you clicked on empty plot background, clear any selection
+    if (!ev.points || !ev.points.length) {
+      clearSelection();
+      return;
+    }
+
+    const point = ev.points[0];
+    const data = CURRENT.data[0];
+
+    // Determine node index we are selecting
+    let nodeIdx = null;
+
+    if (typeof point.source === 'number' && typeof point.target === 'number') {
+      // Clicked on a link -> use its source node as anchor
+      const linkIdx = point.pointNumber;
+      nodeIdx = data.link.source[linkIdx];
+    } else if (typeof point.pointNumber === 'number') {
+      // Clicked on a node
+      nodeIdx = point.pointNumber;
+    }
+
+    if (nodeIdx === null || nodeIdx === undefined) return;
+
+    // Toggle selection: clicking same node again clears
+    if (SELECTED_NODE === nodeIdx) {
+      clearSelection();
+      return;
+    }
+
+    SELECTED_NODE = nodeIdx;
+
+    const sources = data.link.source;
+    const targets = data.link.target;
+    const nLinks = sources.length;
+
+    const selNodes = new Set([nodeIdx]);
+    const selLinks = new Set();
+
+    // Downstream traversal
+    const qDown = [nodeIdx];
+    while (qDown.length) {
+      const cur = qDown.shift();
+      for (let i = 0; i < nLinks; i++) {
+        if (sources[i] === cur) {
+          selLinks.add(i);
+          const t = targets[i];
+          if (!selNodes.has(t)) {
+            selNodes.add(t);
+            qDown.push(t);
+          }
+        }
+      }
+    }
+
+    // Upstream traversal
+    const qUp = [nodeIdx];
+    while (qUp.length) {
+      const cur = qUp.shift();
+      for (let i = 0; i < nLinks; i++) {
+        if (targets[i] === cur) {
+          selLinks.add(i);
+          const s = sources[i];
+          if (!selNodes.has(s)) {
+            selNodes.add(s);
+            qUp.push(s);
+          }
+        }
+      }
+    }
+
+    // --- Build new colors that make the whole path pop ---
+    const baseNodeColors = CURRENT.nodeColors.map(c => hexToRgba(c, 0.98));
+    const baseLinkColors = CURRENT.baseLinkColors;
+
+    const dimNode = 'rgba(22, 28, 45, 0.25)';
+    const dimLink = 'rgba(22, 28, 45, 0.10)';
+
+    const nodeColors = baseNodeColors.map((c, idx) =>
+      selNodes.has(idx) ? c : dimNode
+    );
+
+    const linkColors = baseLinkColors.map((c, idx) =>
+      selLinks.has(idx) ? setAlpha(c, 0.95) : dimLink
+    );
+
+    Plotly.restyle('plot', {
+      'node.color': [nodeColors],
+      'link.color': [linkColors]
+    });
+  }
+
+  function clearSelection() {
+    SELECTED_NODE = null;
+    if (!CURRENT) return;
+    const data = CURRENT.data[0];
+    const origNodeColors = CURRENT.nodeColors.map(c => hexToRgba(c, 0.95));
+
+    Plotly.restyle('plot', {
+      'node.color': [origNodeColors],
+      'link.color': [CURRENT.baseLinkColors.slice()]
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    const plotContainer = document.getElementById('plot-container');
+    const tooltip = document.getElementById('custom-tooltip');
+    if (!plotContainer) return;
+
+    const clickedInsidePlot = plotContainer.contains(e.target);
+    const clickedInsideTooltip = tooltip && tooltip.contains(e.target);
+
+    // If click is completely outside both the plot and the tooltip,
+    // drop any selection + hide tooltip.
+    if (!clickedInsidePlot && !clickedInsideTooltip) {
+      clearSelection();
+      const tt = document.getElementById('custom-tooltip');
+      if (tt) tt.style.display = 'none';
+    }
+  });
+
+  function handleHover(ev){
+    if (!CURRENT) return;
+    const point = ev.points[0]; 
+    if (!point) return;
+
+    const pointNodeIndex = point.pointNumber;
+    const data = CURRENT.data[0];
+
+    // --- ONLY change node/link colors when nothing is selected ---
+    if (SELECTED_NODE === null) {
+      const origNodeColors = CURRENT.nodeColors.map(c => hexToRgba(c, 0.95));
+      const faded = origNodeColors.map((c, idx) => idx === pointNodeIndex ? c : toFaded(c, 0.15));
+      const newNode = Object.assign({}, data.node, { color: faded });
+
+      const baseLinkColors = CURRENT.baseLinkColors;
+      const newLinkColors = baseLinkColors.map((c, i) => {
+        const s = data.link.source[i];
+        const t = data.link.target[i];
+        return (s === pointNodeIndex || t === pointNodeIndex) ? setAlpha(c, 0.75) : toFaded(c, 0.12);
+      });
+
+      Plotly.restyle('plot', {
+        'node.color': [newNode.color],
+        'link.color': [newLinkColors]
+      });
+    }
+
+    // --- Tooltip logic stays exactly as you have it ---
+    try {
+      const tt = document.getElementById('custom-tooltip');
+      const nodeMeta = data.node.customdata && data.node.customdata[pointNodeIndex]
+        ? data.node.customdata[pointNodeIndex]
+        : null;
+
+      if (nodeMeta) {
+        // use true row count if available; fall back to link-based value
+        const totalRows = (typeof nodeMeta.rowCount === 'number' && nodeMeta.rowCount > 0)
+          ? nodeMeta.rowCount
+          : nodeMeta.value;
+
+        let html = `<div style="font-weight:600;margin-bottom:6px;font-size:14px">${escapeHtml(nodeMeta.label)} — ${totalRows}</div>`;
+        html += '<div style="max-height:240px;overflow:auto">';
+
+        const selAttrs = getSelections();
+        for (const a of selAttrs) {
+          if (!a || a.toLowerCase() === 'workshop') continue;
+
+          const bd = nodeMeta.breakdown && nodeMeta.breakdown[a]
+            ? nodeMeta.breakdown[a]
+            : { values: [], total: totalRows };
+
+          html += `<div style="margin-bottom:8px"><div style="font-weight:600">${escapeHtml(a)}</div>`;
+
+          const vals = bd.values || [];
+          if (vals.length === 0) {
+            html += `<div style="color:#93A5B8">No data</div>`;
+          } else {
+            const topN = vals.slice(0, 5);
+            const denom = (typeof bd.total === 'number' && bd.total > 0) ? bd.total : totalRows;
+
+            topN.forEach(v => {
+              const pct = denom > 0 ? (v.count / denom * 100) : 0;
+              const pctStr = (pct >= 10 ? pct.toFixed(0) : pct.toFixed(1)) + '%';
+              html += `<div style="margin-left:6px">${escapeHtml(v.value)} <span style="color:#93A5B8">(${pctStr})</span></div>`;
+            });
+          }
+
+          html += `</div>`;
+        }
+
+        html += '</div>';
+        tt.innerHTML = html;
+
+        // --- Deterministic tooltip positioning based on cursor only ---
+
+        // Cursor position in viewport coordinates
+        const ex = (ev.event && (ev.event.clientX || ev.event.pageX)) || (window.innerWidth / 2);
+        const ey = (ev.event && (ev.event.clientY || ev.event.pageY)) || (window.innerHeight / 2);
+
+        // Make tooltip visible and measure its actual size
+        tt.style.display = 'block';
+        tt.style.left = '0px';
+        tt.style.top = '0px';
+
+        let w = tt.offsetWidth || 320;
+        let h = tt.offsetHeight || 260;
+
+        const viewW = window.innerWidth;
+        const viewH = window.innerHeight;
+        const marginX = 8;
+        const marginY = 8;
+        const OFFSET_X = 10;
+
+        // If tooltip is wider than the viewport minus margins, shrink it
+        if (w > viewW - 2 * marginX) {
+          w = viewW - 2 * marginX;
+          tt.style.width = w + 'px';
+        }
+        // If tooltip is taller than the viewport minus margins, cap its height
+        if (h > viewH - 2 * marginY) {
+          h = viewH - 2 * marginY;
+          tt.style.maxHeight = h + 'px';
+        }
+
+        // ----- Horizontal placement -----
+        // Default: 10px to the RIGHT of the cursor
+        let left = ex + OFFSET_X;
+
+        // If this would overflow to the right, flip to LEFT
+        if (left + w + marginX > viewW) {
+          left = ex - OFFSET_X - w;
+        }
+
+        // Clamp horizontally so it never leaves the viewport
+        if (left < marginX) left = marginX;
+        if (left + w > viewW - marginX) left = viewW - w - marginX;
+
+        // ----- Vertical placement -----
+        // Default: vertically centered around cursor
+        let top = ey - h / 2;
+
+        // If bottom would overflow, put tooltip ABOVE the cursor
+        // so that tooltip bottom aligns with cursor Y.
+        if (top + h + marginY > viewH) {
+          top = ey - h;
+        }
+
+        // Clamp vertically so it never leaves the viewport
+        if (top < marginY) top = marginY;
+        if (top + h > viewH - marginY) top = viewH - h - marginY;
+
+        tt.style.left = left + 'px';
+        tt.style.top = top + 'px';
+      }
+    } catch(e){ /* no-op */ }
+  }
+
+  function toFaded(rgbaStr, alpha){
+    if(rgbaStr.startsWith('rgba')){
+      const parts = rgbaStr.replace('rgba(', '').replace(')','').split(',');
+      return `rgba(${parts[0]},${parts[1]},${parts[2]},${alpha})`;
+    }
+    return rgbaStr;
+  }
+
+  function restoreHover(){
+    if (!CURRENT) return;
+    if (tooltipLocked) return;
+
+    // Only reset colors if no node is selected (so click selection stays)
+    if (SELECTED_NODE === null) {
+      const origNodeColors = CURRENT.nodeColors.map(c => hexToRgba(c, 0.95));
+      Plotly.restyle('plot', {
+        'node.color': [origNodeColors],
+        'link.color': [CURRENT.baseLinkColors.slice()]
+      });
+    }
+
+    const tt = document.getElementById('custom-tooltip');
+    if (tt) tt.style.display = 'none';
+  }
+
+  function escapeHtml(str){
+    if(str===null || str===undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  (function main(){
+    // initControls() already assigns unique defaults via enforceUniqueSelections(true)
+    initControls();
+    drawInitial();
+  })();
+  </script>
+</body>
+</html>
