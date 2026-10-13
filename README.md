@@ -1,4 +1,9 @@
 # Biostruct-Africa
+
+The Sankey generator is now available as `create_sankey.py` with a documented CLI and a four-row synthetic example. See [reproduction instructions](REPRODUCE.md) for the tested startup path and data-sharing considerations. Existing HTML outputs and the archive remain unchanged.
+
+The following project description is historical. Its numerical results and GDPR-compliance statements have not been independently verified during this repair.
+
 Project Summary
 This project delivers an interactive visual analytics system to analyze applicant and participant data from BioStruct-Africa’s capacity-building workshops conducted in Mali (2022), Cameroon (2024), and Kenya (2025). The system was designed to support strategic program evaluation by enabling exploration of geographic reach, disciplinary composition, gender distribution, career stages, and workshop-specific demand patterns.
 Two primary visualization components were implemented:
