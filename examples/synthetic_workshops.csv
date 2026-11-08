@@ -1,0 +1,5 @@
+Workshop,Admission Outcome,Gender,Status,Field of Research,Region
+Demo East,Selected,Female,Student,Biology,East
+Demo East,Selected,Male,Researcher,Chemistry,West
+Demo West,Waitlisted,Female,Researcher,Physics,North
+Demo West,Selected,Male,Student,Biology,South
