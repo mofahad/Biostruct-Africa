@@ -4,7 +4,7 @@ The original Python generator was buried inside the repository ZIP. It is now av
 
 ```bash
 python -m pip install -r requirements.txt
-python create_sankey.py examples/synthetic_workshops.csv output/demo.html
+python create_sankey.py examples/synthetic_workshops.csv output/demo.html --synthetic
 ```
 
 Open `output/demo.html` in a browser. Plotly, fonts, and CSS load from external CDNs, so rendering requires network access. The four example rows are deliberately synthetic; they are not workshop applicants or evidence of workshop outcomes.

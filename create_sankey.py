@@ -37,7 +37,7 @@ def load_data(csv_path):
     return df
 
 
-def build_html(data_rows, all_attrs, total_layers, out_path):
+def build_html(data_rows, all_attrs, total_layers, out_path, *, synthetic=False):
     # Embed data_rows and attributes into an HTML+JS client-side app using Plotly
     data_json = json.dumps(data_rows).replace('<', '\\u003c')
     attrs_json = json.dumps(all_attrs).replace('<', '\\u003c')
@@ -1104,6 +1104,14 @@ def build_html(data_rows, all_attrs, total_layers, out_path):
 </html>
 """
 
+    if synthetic:
+        historical_title = "Application and Participation Flow in BioStruct-Africa's Capacity-Building Workshops"
+        html_template = html_template.replace(historical_title, "BioStruct-Africa | Synthetic Workshop Flows")
+        html_template = html_template.replace(
+            "<p>This interactive Sankey diagram provides an overview of the applicants and participants of BioStruct-Africa's capacity-building workshops in Mali (2022), Cameroon (2024), and Kenya (2025). It visualizes the flow of applicants and participants, mapping their professional backgrounds, career stages and institutional affiliations. The diagram helps to illuminate the composition of each workshop and understand the dynamics of engagement across different regions and scientific communities.</p>",
+            "<p>These fictional records demonstrate how workshop flows change when you select different attributes. All values are synthetic examples.</p>",
+        )
+
     # substitute large JSON blobs (avoid f-string / brace escaping issues)
     html = html_template.replace('DATA_JSON_PLACEHOLDER', data_json).replace('ATTRS_JSON_PLACEHOLDER', attrs_json).replace('TOTAL_LAYERS_PLACEHOLDER', str(total_layers))
 
@@ -1114,7 +1122,7 @@ def build_html(data_rows, all_attrs, total_layers, out_path):
     print(f"Wrote interactive sankey HTML to: {out_path}")
 
 
-def prepare_and_write(csv_path, out_html, total_layers):
+def prepare_and_write(csv_path, out_html, total_layers, *, synthetic=False):
     df = load_data(csv_path)
 
     # --- Derived columns, aware of old vs new schema ---
@@ -1157,7 +1165,7 @@ def prepare_and_write(csv_path, out_html, total_layers):
     # Prepare data rows as list of dicts for client-side processing. Include only Workshop + selectable attrs
     data_rows = df[[c for c in ['Workshop'] + selectable if c in df.columns]].to_dict(orient='records')
 
-    build_html(data_rows, selectable, total_layers, out_html)
+    build_html(data_rows, selectable, total_layers, out_html, synthetic=synthetic)
 
 
 if __name__ == '__main__':
@@ -1166,9 +1174,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate an interactive Sankey from an authorized CSV.')
     parser.add_argument('input_csv', type=Path)
     parser.add_argument('output_html', type=Path)
+    parser.add_argument('--synthetic', action='store_true', help='Label the export as fictional demonstration data.')
     args = parser.parse_args()
     if args.output_html.suffix.lower() != '.html':
         parser.error('Output filename must end in .html.')
     args.output_html.parent.mkdir(parents=True, exist_ok=True)
-    prepare_and_write(str(args.input_csv), str(args.output_html), TOTAL_LAYERS)
+    prepare_and_write(str(args.input_csv), str(args.output_html), TOTAL_LAYERS, synthetic=args.synthetic)
     print('Created', args.output_html)

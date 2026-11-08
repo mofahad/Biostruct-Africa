@@ -10,4 +10,4 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: pip install -r requirements.txt
-      - run: python create_sankey.py examples/synthetic_workshops.csv output/demo.html
+      - run: python create_sankey.py examples/synthetic_workshops.csv output/demo.html --synthetic
